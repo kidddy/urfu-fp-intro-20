@@ -298,7 +298,7 @@ module Lecture03 where
     - not false ->> true
 -}
 not :: String
-not = "notimplemented"
+not = "\\x.x false true"
 
 {-
   Напишите терм `and`:
@@ -309,7 +309,7 @@ not = "notimplemented"
     - and false false ->> false
 -}
 and :: String
-and = "notimplemented"
+and = "\\t1.\\t2.t1 t2 false"
 
 {-
   Напишите терм `or`:
@@ -320,7 +320,7 @@ and = "notimplemented"
     - or false false ->> false
 -}
 or :: String
-or = "notimplemented"
+or = "\\t1.\\t2.t1 true t2"
 -- </Задачи для самостоятельного решения>
 
 {-
@@ -345,8 +345,8 @@ or = "notimplemented"
   Убедимся, что `succ n = n+1`:
   
     succ n ≡  (λn f x.f (n f x)) (λf x.f^n x)
-          →β  f x.f ((λf x.f^n x) f x)
-        ->>β  f x.f (f^n x)
+          →β  λf x.f ((λf x.f^n x) f x)
+        ->>β  λf x.f (f^n x)
            ≡  (n+1)
    
    Так определяется функции сложения и умножения:
@@ -373,7 +373,7 @@ or = "notimplemented"
   isZero n = False
 -}
 isZero :: String
-isZero = "notimplemented"
+isZero = "\\n.n (\\x.false) true"
 
 -- </Задачи для самостоятельного решения>
 
@@ -438,7 +438,11 @@ isZero = "notimplemented"
         ->>β  (mult 2 (F fact 1)))
         ->>β  ...
 
+
   Рекомендуем довести до конца самостоятельно.
+
+        ->>β  (mult 2 (F fact 1)))
+        ->>β  ...
 -}
 
 -- <Задачи для самостоятельного решения>
@@ -459,7 +463,7 @@ isZero = "notimplemented"
   Что она возвращает? Чему равен pred pred 1?
 -}
 fib :: String
-fib = "notimplemented"
+fib = "Y (\\f.\\n.(\\x.x (\\x.false) true) n 1 (plus (f (pred n)) (f (pred (pred n)))))"
 
 -- </Задачи для самостоятельного решения>
 
