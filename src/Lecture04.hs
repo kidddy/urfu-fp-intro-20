@@ -329,7 +329,10 @@ newtype AdoptedAnimal = AdoptedAnimal
     - Month
     - Year
 -}
-showDate :: Int -> Int -> Int -> String
+newtype Day = Day { day :: Int } deriving (Eq, Show)
+newtype Month = Month { month :: Int } deriving (Eq, Show)
+newtype Year = Year { year :: Int } deriving (Eq, Show) 
+showDate :: Day -> Month -> Year -> String
 showDate day month year =
   "Day " ++ show day ++ " of " ++ show month ++ " month, year " ++ show year
 
