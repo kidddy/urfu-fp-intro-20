@@ -298,7 +298,7 @@ module Lecture03 where
     - not false ->> true
 -}
 not :: String
-not = "\\x.x false true"
+not = "\\b.b false true"
 
 {-
   Напишите терм `and`:
@@ -309,7 +309,7 @@ not = "\\x.x false true"
     - and false false ->> false
 -}
 and :: String
-and = "\\t1.\\t2.t1 t2 false"
+and = "\\p.\\q.p q p"
 
 {-
   Напишите терм `or`:
@@ -320,7 +320,7 @@ and = "\\t1.\\t2.t1 t2 false"
     - or false false ->> false
 -}
 or :: String
-or = "\\t1.\\t2.t1 true t2"
+or = "\\p.\\q.p p q"
 -- </Задачи для самостоятельного решения>
 
 {-
@@ -373,7 +373,7 @@ or = "\\t1.\\t2.t1 true t2"
   isZero n = False
 -}
 isZero :: String
-isZero = "\\n.n (\\x.false) true"
+isZero = "\\n.\\a.\\b.n (\\z.b) a"
 
 -- </Задачи для самостоятельного решения>
 
@@ -463,7 +463,7 @@ isZero = "\\n.n (\\x.false) true"
   Что она возвращает? Чему равен pred pred 1?
 -}
 fib :: String
-fib = "Y (\\f.\\n.(\\x.x (\\x.false) true) n 1 (plus (f (pred n)) (f (pred (pred n)))))"
+fib = "Y (\\f.\\n.(\\n.\\x.\\y.n (\\z.y) x) n (succ 0) (plus (f (pred n)) (f (pred (pred n)))))"
 
 -- </Задачи для самостоятельного решения>
 
