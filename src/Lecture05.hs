@@ -43,11 +43,14 @@ module Lecture05 where
     https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes#/media/File:Sieve_of_Eratosthenes_animation.gif
 -}
 sieve :: [Integer] -> [Integer]
-sieve xs = error "not implemented"
+sieve [] = []
+sieve (x: xs) = x : sieve new_xs
+  where new_xs = filter (\n -> n `mod` x /= 0) xs
+
 
 -- Функция, возвращающая n-ое простое число. Для её реализации используйте функцию sieve
 nthPrime :: Int -> Integer
-nthPrime n = error "not implemented"
+nthPrime n = (sieve [2..]) !! (n - 1)
 
 {-
     Недавно в интервью Forbes с Сергеем Гуриевым Андрей Мовчан решил показать, что он
@@ -71,11 +74,18 @@ nthPrime n = error "not implemented"
 -- Возвращает бесконечный список ВВП на годы и годы вперёд
 -- yearGDP 100 0.1 ~> [100, 100.1, 100.20009(9), 100.3003.., ...]
 yearGDP :: Double -> Double -> [Double]
-yearGDP now percent = error "not implemented"
+yearGDP now percent = iterate (\x -> x + x*(0.01 * percent)) now
 
 -- Возвращает количество лет, которые нужны Китаю, чтобы догнать США в текущих условиях
 inHowManyYearsChinaWins :: Int
-inHowManyYearsChinaWins = error "not implemented"
+inHowManyYearsChinaWins = 
+  let xs = zip (yearGDP 10000 6) (yearGDP 66000 2)
+      f step_num xs = case xs of
+        ((china, america) : xs) -> if china >= america
+          then step_num
+          else f (step_num+1) xs
+        _ -> undefined
+  in f 0 xs
 
 {-
   Пусть у нас есть некоторая лента событий, каждое сообщение в которой говорит,
@@ -105,7 +115,8 @@ inHowManyYearsChinaWins = error "not implemented"
       import Data.List
 -}
 
-data Country = Country String Integer deriving (Eq, Show)
+-- параметр с ! должен быть вычислен сразу при конструкторе
+data Country = Country String !Integer deriving (Eq, Show)
 
 allCountries :: [Country]
 allCountries =
@@ -116,6 +127,35 @@ allCountries =
   , Country "GreatBritain" 0 ]
 
 stat :: [Country] -> [Country]
-stat events = error "not implemented"
+stat events =
+  let
+    -- скопировал с https://wiki.haskell.org/Foldr_Foldl_Foldl'. Вроде должно быть правильно
+    foldl' _ z [] = z
+    foldl' f z (x:xs) =
+      let z' = f z x
+      in seq z' $ foldl' f z' xs
+
+    -- Принимает текущие данные о заболевших ([Country]) и новость о новых заболевших (Country)
+    -- Возвращает список обновленные данные о заболевших
+    update :: [Country] -> Country -> [Country]
+    update current_list (Country infected_country new_infected) =
+      let
+        -- это строгий map. он должен сразу вычислять элементы списка при отображении
+        map' _ [] = []
+        map' f (x:xs) = 
+          let x' = f $! x
+          in seq x' $ x' : (map' f xs)
+
+        -- если закаррировать первые два аргумента, то получится функция которая обновит кол-во заболевщих только в одной стране
+        update_selected :: String -> Integer -> Country -> Country
+        update_selected infected_country new_infected (Country name infected) = if infected_country == name
+          then Country name (infected + new_infected)
+          else Country name infected
+
+      -- пройти по всем странам в списке и обновить ту страну, которая равна `infected_country`
+      in map' (update_selected infected_country new_infected) current_list
+
+  -- по каждому событию обнови данные о заболевших
+  in foldl' update allCountries events
 
 -- </Задачи для самостоятельного решения>
