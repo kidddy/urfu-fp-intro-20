@@ -130,6 +130,11 @@ module Lecture06 where
   если нет, то докажите это (напишите, почему)
 
   *Решение*
+
+  Допустим, такой контекст и такой тип существует.
+  Γ ⊢ x x : T
+  Γ ⊢ x: T' -> T    Γ ⊢ x: T'
+  По теореме единственности типов получили противоречие — один и тот же терм x не может иметь два разных типа.  
 -}
 -- </Задачи для самостоятельного решения>
 
@@ -326,7 +331,7 @@ module Lecture06 where
   Убедитесь, что selfApp работает. Приведите терм `selfApp id` в нормальную форму
   и запишите все шаги β-редукции ->β.
 
-  selfApp id = ... ->β ...
+  selfApp id = (λx.x x) (λx.x) ->β (λx.x) (λx.x) ->β λx.x
 -}
 -- </Задачи для самостоятельного решения>
 
@@ -578,16 +583,16 @@ module Lecture06 where
 -}
 
 f :: [a] -> Int
-f = error "not implemented"
+f = length
 
 g :: (a -> b)->[a]->[b]
-g = error "not implemented"
+g = map
 
 q :: a -> a -> a
-q x y = error "not implemented"
+q x y = x
 
 p :: (a -> b) -> (b -> c) -> (a -> c)
-p f g = error "not implemented"
+p f g = g . f
 
 {-
   Крестики-нолики Чёрча.
@@ -624,7 +629,10 @@ createRow x y z = \case
   Third -> z
 
 createField :: Row -> Row -> Row -> Field
-createField x y z = error "not implemented"
+createField x y z = \case
+  First -> x
+  Second -> y
+  Third -> z
 
 -- Чтобы было с чего начинать проверять ваши функции
 emptyField :: Field
@@ -633,18 +641,47 @@ emptyField = createField emptyLine emptyLine emptyLine
     emptyLine = createRow Empty Empty Empty
 
 setCellInRow :: Row -> Index -> Value -> Row
-setCellInRow r i v = error "not implemented"
+setCellInRow r i v = case i of
+  First -> createRow v (r Second) (r Third)
+  Second -> createRow (r First) v (r Third)
+  Third -> createRow (r First) (r Second) v
 
 -- Возвращает новое игровое поле, если клетку можно занять.
 -- Возвращает ошибку, если место занято.
 setCell :: Field -> Index -> Index -> Value -> Either String Field
-setCell field i j v = error "not implemented"
+setCell field i j v = 
+  if isEmpty (field i j)
+    then Right (updateField i)
+    else Left ("There is '" ++ (show (field i j)) ++ "' on " ++ (show i) ++ " " ++ (show j))
+  where
+    isEmpty = \case
+      Empty -> True
+      otherwise -> False
+    updateField = \case
+      First -> createField (setCellInRow (field i) j v) (field Second) (field Third)
+      Second -> createField (field First) (setCellInRow (field i) j v) (field Third)
+      Third -> createField (field First) (field Second) (setCellInRow (field i) j v)
 
 data GameState = InProgress | Draw | XsWon | OsWon deriving (Eq, Show)
 
 getGameState :: Field -> GameState
-getGameState field = error "not implemented"
-
+getGameState field = 
+  if isRowWon Zero || isLDiagWon Zero || isRDiagWon Zero
+    then OsWon
+    else 
+      if isRowWon Cross || isLDiagWon Cross || isRDiagWon Cross
+        then XsWon
+        else if isDraw then Draw else InProgress
+  where
+    isDraw = 
+      not (isFilled Empty (field First)) && not (isFilled Empty (field Second)) && not (isFilled Empty (field Third))
+    isLDiagWon v =
+      (((field First) First) == v) && (((field Second) Second) == v) && (((field Third) Third) == v)
+    isRDiagWon v =
+      (((field First) Third) == v) && (((field Second) Second) == v) && (((field Third) First) == v)
+    isRowWon v = isFilled v (field First) || isFilled v (field Second) || isFilled v (field Third)
+    isFilled v r = (r First) == v && (r Second) == v && (r Third) == v 
+        
 -- </Задачи для самостоятельного решения>
 
 {- Источники
