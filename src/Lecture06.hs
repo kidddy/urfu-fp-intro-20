@@ -130,6 +130,30 @@ module Lecture06 where
   если нет, то докажите это (напишите, почему)
 
   *Решение*
+  от отбратного выведем тип для х
+
+  Г ⊢ x : T' -> T     Г ⊢ x : T'
+  ------------------------------ (T-App)
+            Г ⊢ x x : T
+
+  Получаем Г = {
+    (x : T' -> T),
+    (x : T'),
+  }
+
+  значит T' = T' -> T. Раскроем T' внутри выражения
+  T' = (T' -> T) -> T
+  T' = ((T' -> T) -> T) -> T
+  
+  Теперь Г = {
+    (x : T'),
+    (x : T' -> T),
+    (x : (T' -> T) -> T),
+  }
+  
+  однако (T' -> T) и ((T' -> T) -> T) это функции разных типов. Получили противоречие
+  Значит не существует.
+
 -}
 -- </Задачи для самостоятельного решения>
 
@@ -326,7 +350,9 @@ module Lecture06 where
   Убедитесь, что selfApp работает. Приведите терм `selfApp id` в нормальную форму
   и запишите все шаги β-редукции ->β.
 
-  selfApp id = ... ->β ...
+  selfApp id = (λx:∀X.X->X.x [∀X.X->X] x) id ->β id [∀X.X->X] id ->β
+                ->β (ΛX. λx:X.x) [∀X.X->X] id ->β (λx:∀X.X->X.x) id ->β
+                ->β id ->β ΛX. λx:X.x
 -}
 -- </Задачи для самостоятельного решения>
 
@@ -578,16 +604,17 @@ module Lecture06 where
 -}
 
 f :: [a] -> Int
-f = error "not implemented"
+f = length
+
 
 g :: (a -> b)->[a]->[b]
-g = error "not implemented"
+g = map
 
 q :: a -> a -> a
-q x y = error "not implemented"
+q x y = x
 
 p :: (a -> b) -> (b -> c) -> (a -> c)
-p f g = error "not implemented"
+p f g = g . f
 
 {-
   Крестики-нолики Чёрча.
@@ -608,23 +635,26 @@ type Field = Index -> Row
 
 -- Обсудим это на следующем занятии
 instance Show Index where
-  show First = "1"
+  show First  = "1"
   show Second = "2"
-  show Third = "3"
+  show Third  = "3"
 
 instance Show Value where
-  show Zero = "o"
+  show Zero  = "o"
   show Cross = "x"
   show Empty = "."
 
 createRow :: Value -> Value -> Value -> Row
 createRow x y z = \case
-  First -> x
+  First ->  x
   Second -> y
-  Third -> z
+  Third ->  z
 
 createField :: Row -> Row -> Row -> Field
-createField x y z = error "not implemented"
+createField x y z = \case
+  First ->  x
+  Second -> y
+  Third ->  z
 
 -- Чтобы было с чего начинать проверять ваши функции
 emptyField :: Field
@@ -633,17 +663,72 @@ emptyField = createField emptyLine emptyLine emptyLine
     emptyLine = createRow Empty Empty Empty
 
 setCellInRow :: Row -> Index -> Value -> Row
-setCellInRow r i v = error "not implemented"
+setCellInRow r i v = case i of
+  First -> createRow v (r Second) (r Third)
+  Second -> createRow (r First) v (r Third)
+  Third -> createRow (r First) (r Second) v
 
 -- Возвращает новое игровое поле, если клетку можно занять.
 -- Возвращает ошибку, если место занято.
 setCell :: Field -> Index -> Index -> Value -> Either String Field
-setCell field i j v = error "not implemented"
+setCell field i j v = 
+  if isEmpty (field i j)
+    then Right (updateRow i)
+    else Left ("There is '" ++ (show (field i j)) ++ "' on " ++ (show i) ++ " " ++ (show j))
+  where
+    isEmpty = \case
+      Empty -> True
+      _     -> False
+
+    updateRow = \case
+      First  -> createField (setCellInRow (field i) j v) (field Second) (field Third)
+      Second -> createField (field First) (setCellInRow (field i) j v) (field Third)
+      Third  -> createField (field First) (field Second) (setCellInRow (field i) j v)
 
 data GameState = InProgress | Draw | XsWon | OsWon deriving (Eq, Show)
 
 getGameState :: Field -> GameState
-getGameState field = error "not implemented"
+getGameState field
+  | isAnyRowWon Zero  || isLDiagWon Zero  || isRDiagWon Zero  = OsWon
+  | isAnyRowWon Cross || isLDiagWon Cross || isRDiagWon Cross = XsWon
+  | isDraw                                                    = Draw
+  | otherwise                                                 = InProgress
+  where
+    isDraw :: Bool
+    isDraw = --перебрал все клетки вручную, если все заняты, то ничья
+      field First  First  /= Empty &&
+      field First  Second /= Empty &&
+      field First  Third  /= Empty &&
+      field Second First  /= Empty &&
+      field Second Second /= Empty &&
+      field Second Third  /= Empty &&
+      field Third  First  /= Empty &&
+      field Third  Second /= Empty &&
+      field Third  Third  /= Empty
+
+    isLDiagWon :: Value -> Bool
+    isLDiagWon v = --перебрал убывающую диагональ, если во всех клетках v, то True
+       field First  First  == v && 
+       field Second Second == v &&
+       field Third  Third  == v
+
+    isRDiagWon :: Value -> Bool
+    isRDiagWon v = --перебрал возрастающую диагональ, если во всех клетках v, то True
+      field First  Third  == v &&
+      field Second Second == v &&
+      field Third  First  == v
+
+    isRowWon :: Row -> Value -> Bool
+    isRowWon r v =
+      r First  == v &&
+      r Second == v &&
+      r Third  == v
+
+    isAnyRowWon :: Value -> Bool
+    isAnyRowWon v =
+      isRowWon (field First) v  ||
+      isRowWon (field Second) v ||
+      isRowWon (field Third) v
 
 -- </Задачи для самостоятельного решения>
 
