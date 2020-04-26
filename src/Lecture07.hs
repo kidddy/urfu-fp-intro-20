@@ -66,11 +66,18 @@ data Expr
   deriving Eq
 
 instance Show Expr where
-    show e = case e of
+    show e = let
+      maybe_parentheses :: Expr -> String
+      maybe_parentheses e = case e of
+        Number _     -> show e
+        UnaryMinus _ -> show e
+        Abs _        -> show e
+        _            -> "(" ++ show e ++ ")"
+      in case e of
         Number x      -> show x
-        Plus e1 e2    -> show e1 ++ " + " ++ show e2
-        Minus e1 e2   -> show e1 ++ " - " ++ show e2
-        Mult e1 e2    -> "(" ++ show e1 ++ " * " ++ show e2 ++ ")"
+        Plus e1 e2    -> maybe_parentheses e1 ++ " + " ++ maybe_parentheses e2
+        Minus e1 e2   -> maybe_parentheses e1 ++ " - " ++ maybe_parentheses e2
+        Mult e1 e2    -> maybe_parentheses e1 ++ " * " ++ maybe_parentheses e2
         UnaryMinus e1 -> "-(" ++ show e1 ++ ")"
         Abs e1        -> "|" ++ show e1 ++ "|"
 
@@ -80,13 +87,7 @@ instance Show Expr where
 newtype Vec a = Vec { unVec :: [a] } deriving (Eq, Show)
 
 instance (Semigroup a) => Semigroup (Vec a) where
-    x1 <> x2 = let
-        zipped = zip (unVec x1) (unVec x2)
-
-        f :: (Semigroup a) => (a, a) -> a
-        f (x, y) = x <> y
-
-        in Vec{ unVec=map f zipped }
+    x1 <> x2 = Vec $ zipWith (<>) (unVec x1) (unVec x2)
 
 
 instance Semigroup Integer where
