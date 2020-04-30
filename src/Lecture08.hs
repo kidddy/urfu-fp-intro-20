@@ -41,18 +41,22 @@ import qualified Data.IntMap as Map
 data Stack a = Stack [a] deriving (Eq, Show)
 
 createStack :: Stack a
-createStack = error "not implemented"
+createStack = Stack []
 
 -- Обратите внимание, что все структуры данных неизменяемые (immutable). Значит, если операция
 -- предполагает изменение структуры, то она просто должна возвращать новую уже изменённую версию.
 push :: Stack a -> a -> Stack a
-push stack x = error "not implemented"
+push (Stack body) x = Stack (x:body)
 
 pop :: Stack a -> Maybe (Stack a)
-pop stack = error "not implemented"
+pop (Stack body) = case body of
+    [] -> Nothing
+    _:xs -> Just $ Stack xs
 
 peek :: Stack a -> Maybe a
-peek stack = error "not implemented"
+peek (Stack body) = case body of
+    [] -> Nothing
+    x:_ -> Just x
 
 -- </Задачи для самостоятельного решения>
 
@@ -170,17 +174,22 @@ dequeue' (q:qs) = (q, qs)             -- возвращаем (элемент, �
 data Queue a = Queue [a] [a] deriving (Eq, Show)
 
 createQueue :: Queue a
-createQueue = error "not implemented"
+createQueue = Queue [] []
 
 enqueue :: Queue a -> a -> Queue a
-enqueue queue x = error "not implemented"
+enqueue (Queue input output) x = Queue (x:input) output
 
 -- если очередь пустая возвращает ошибку
 dequeue :: Queue a -> (a, Queue a)
-dequeue queue = error "not implemented"
+dequeue (Queue input output) = case output of
+    x:xs -> (x, Queue input xs)
+    [] -> case input of
+        [] -> error "queue is empty"
+        _ -> dequeue $ Queue [] $ reverse input
 
 isEmpty :: Queue a -> Bool
-isEmpty queue = error "not implemented"
+isEmpty (Queue [] []) = True
+isEmpty _ = False
 
 -- </Задачи для самостоятельного решения>
 
@@ -376,9 +385,87 @@ emptySet = Set.intersection evenSet oddSet
   https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html?highlight=ambiguous#extension-AllowAmbiguousTypes
 -}
 
+class IntArray a where
+  fromList :: [(Int, Int)] -> a    -- создать из списка пар [(index, value)]
+  toList :: a -> [(Int, Int)]      -- преобразовать в список пар [(index, value)]
+  update :: a -> Int -> Int -> a   -- обновить элемент по индексу
+  (#) :: a -> Int -> Int           -- получить элемент по индексу
+
+
+instance IntArray [Int] where
+    fromList [] = []
+    fromList xs = let
+        cells_number :: [(Int, Int)] -> Int
+        cells_number [] = 0
+        cells_number xs = 1 + (maximum $ map fst xs)
+
+        new_list :: Int -> [Int]
+        new_list cells
+            | cells == 0 = []
+            | otherwise  = 0 : (new_list $ cells - 1)
+
+        func :: [Int] -> (Int, Int) -> [Int]
+        func list (idx, value) = update list idx value
+
+        result = foldl func (new_list $ cells_number xs) xs
+        in result
+
+    toList xs = zip [0..] xs
+
+    update [] _ _ = error "Index out of bounds"
+    update (x:xs) idx value
+        | idx == 0  = value:xs
+        | otherwise = x : (update xs (idx - 1) value)
+
+    (#) [] _ = error "Index out of bounds"
+    (#) (x:xs) idx
+        | idx == 0  = x
+        | otherwise = xs # (idx - 1)
+
+
+instance IntArray (Array Int Int) where
+    fromList xs = array (0, maximum . map fst $ xs) xs
+    toList = assocs
+    update array idx value = array // [(idx, value)]
+    array # idx = array ! idx
+
+
+instance IntArray (Map.IntMap Int) where
+    fromList = Map.fromList
+    toList = Map.toList
+    update m k v = Map.insert k v m
+    m # k = m Map.! k
+
+
 -- Сортирует массив целых неотрицательных чисел по возрастанию
 countingSort :: forall a. IntArray a => [Int] -> [Int]
-countingSort = error "not implemented"
+countingSort [] = []
+countingSort xs = let
+    max_cell :: Int
+    max_cell = maximum xs
+
+    count :: [Int] -> a
+    count xs = foldl increment new_list xs
+        where
+            increment :: a -> Int -> a
+            increment int_array idx = update int_array idx $ 1 + (int_array # idx)
+
+            new_list :: a
+            new_list = fromList $ map (\i -> (i, 0)) [0..max_cell]
+
+    extract :: a -> [Int]
+    extract int_array = foldl (extract_one int_array) [] [0..max_cell]
+        where
+            decrement :: a -> Int -> a
+            decrement int_array idx = update int_array idx $ (int_array # idx) - 1
+
+            extract_one :: a -> [Int] -> Int -> [Int]
+            extract_one int_array acc idx
+                | int_array # idx == 0 = acc
+                | otherwise            = extract_one (decrement int_array idx) (idx:acc) idx
+
+
+    in reverse . extract . count $ xs
 
 {-
   Tак можно запустить функцию сортировки с использованием конкретной реализацией массива:
@@ -395,7 +482,7 @@ sorted = countingSort @[Int] [2,2,2,3,3,3,1,1,1]
 
 -- </Задачи для самостоятельного решения>
 
-{- Сылки
+{- Ссылки
 
   - "Purely Functional Data Structures"         Chris Okasaki https://www.cs.cmu.edu/~rwh/theses/okasaki.pdf
   - "Functional Data Structures and Algorithms" Milan Straka  http://fox.ucw.cz/papers/thesis/thesis.pdf
