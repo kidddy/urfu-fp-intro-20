@@ -133,7 +133,7 @@ newtype MaybeT m a = MaybeT { runMaybeT :: m (Maybe a) }
 -}
 
 instance Monad m => Functor (MaybeT m) where
-  -- lift — Mонадный аналог fmap из Control.Monad
+  -- liftM — Mонадный аналог fmap из Control.Monad
   -- liftM :: Monad m => (a1 -> r) -> m a1 -> m r
   fmap = liftM
 
@@ -151,10 +151,10 @@ instance Monad m => Monad (MaybeT m) where
   return  = MaybeT . return . Just
 
   -- (>>=) :: MaybeT m a -> (a -> MaybeT m b) -> MaybeT m b
-  (>>=) transformer f = MaybeT $ do -- Нужен конструктор, чтобы вернуть MeybeT
+  (>>=) transformer f = MaybeT $ do -- Нужен конструктор, чтобы вернуть MaybeT
     -- достаём вычисление из трансформера и выполняем его с помощью <-
     maybe <- runMaybeT transformer
-     -- результат должен быть типа m (MaybeT b), т.к. перед do есть вызов конструктора
+     -- результат должен быть типа m (Maybe b), т.к. перед do есть вызов конструктора
      -- MaybeT :: m (Maybe a) -> MaybeT m a
     case maybe of
         -- eсли его результат Nothing, то просто оборачиваем его в m

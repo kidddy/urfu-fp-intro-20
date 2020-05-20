@@ -65,9 +65,7 @@ persons =
 findById :: PersonId -> Reader [Person] (Maybe Person)
 findById pId = do
     persons <- ask
-    case filter (\p -> id p == pId) persons of
-        [x] -> return $ Just x
-        _   -> return $ Nothing
+    return $ find (\p -> id p == pId) persons
 
 processSingle :: Person -> String
 processSingle p = let
@@ -104,6 +102,8 @@ processPerson pId = do
     
 
 processPersons :: [PersonId] -> [Maybe String]
-processPersons pIds = [ runReader (processPerson pId) persons | pId <- pIds ]
+processPersons pIds = do
+    pId <- pIds
+    return $ runReader (processPerson pId) persons
 
 -- </Задачи для самостоятельного решения>
